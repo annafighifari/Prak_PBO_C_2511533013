@@ -1,0 +1,56 @@
+package shop.payment;
+
+import shop.exception.InsufficientBalanceException;
+import shop.exception.PaymentFailedException;
+
+public class CreditCardPayment implements RefundablePayment, InstallmentPayment {
+    private final String cardHolder;
+    private final long creditLimit;
+    private long usedCredit;
+
+    public CreditCardPayment(String cardHolder, long creditLimit) {
+        if (cardHolder == null || cardHolder.isBlank()) {
+            throw new IllegalArgumentException("Card holder must not be blank");
+        }
+        if (creditLimit <= 0) {
+            throw new IllegalArgumentException("Credit limit must be positive");
+        }
+        this.cardHolder = cardHolder;
+        this.creditLimit = creditLimit;
+    }
+
+    @Override
+    public String getName() {
+        return "Kartu Kredit (" + cardHolder + ")";
+    }
+
+    public long getUsedCredit() {
+        return usedCredit;
+    }
+
+    @Override
+    public void pay(long amount) throws PaymentFailedException {
+        if (amount <= 0) {
+            throw new PaymentFailedException("Jumlah pembayaran harus positif");
+        }
+        long availableLimit = creditLimit - usedCredit;
+        if (amount > availableLimit) {
+            throw new InsufficientBalanceException(amount, availableLimit);
+        }
+        usedCredit += amount;
+    }
+
+    @Override
+    public boolean refund(long amount) {
+        if (amount <= 0 || amount > usedCredit) {
+            return false;
+        }
+        usedCredit -= amount;
+        return true;
+    }
+
+    @Override
+    public int maxInstallmentMonths() {
+        return 12;
+    }
+}
